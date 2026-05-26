@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Some Grub — SW Compliance Route</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; display: flex; height: 100vh; }
+  #map { flex: 1; }
+  #panel {
+    width: 320px; min-width: 320px;
+    background: #1a3a5c;
+    color: #fff;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  #panel h1 {
+    background: #0f2440;
+    padding: 14px 16px;
+    font-size: 14px;
+    line-height: 1.4;
+    border-bottom: 2px solid #2e5d9e;
+  }
+  #panel h1 span { display: block; font-size: 11px; font-weight: normal; color: #8aafcc; margin-top: 3px; }
+  .section-title {
+    background: #2e5d9e;
+    padding: 8px 16px;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #c8dcef;
+  }
+  .stop {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px 16px;
+    border-bottom: 1px solid #1f4a73;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .stop:hover { background: #1f4a73; }
+  .stop-num {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: bold;
+    flex-shrink: 0;
+    margin-right: 10px;
+    margin-top: 1px;
+  }
+  .stop-info { flex: 1; }
+  .stop-name { font-size: 12px; font-weight: bold; color: #fff; }
+  .stop-detail { font-size: 11px; color: #8aafcc; margin-top: 2px; }
+  .stop-skus { font-size: 10px; margin-top: 3px; }
+  .badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
+    margin-right: 3px;
+  }
+  .badge-dark { background: #c0392b; color: #fff; }
+  .badge-2sku { background: #e67e22; color: #fff; }
+  .badge-1sku { background: #d4ac0d; color: #111; }
+  .badge-ok   { background: #27ae60; color: #fff; }
+  .legend {
+    padding: 12px 16px;
+    border-top: 1px solid #1f4a73;
+    margin-top: auto;
+  }
+  .legend-title { font-size: 10px; color: #8aafcc; margin-bottom: 6px; text-transform: uppercase; }
+  .legend-row { display: flex; align-items: center; margin-bottom: 5px; font-size: 11px; color: #c8dcef; }
+  .legend-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    margin-right: 8px; flex-shrink: 0;
+  }
+  .route-note {
+    padding: 10px 16px;
+    background: #0f2440;
+    font-size: 11px;
+    color: #8aafcc;
+    line-height: 1.5;
+    border-top: 1px solid #1f4a73;
+  }
+  .route-note strong { color: #fff; }
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div id="panel">
+  <h1>
+    SW Compliance Route
+    <span>From Bodmin · Devon &amp; Cornwall · Some Grub Co-op stores</span>
+  </h1>
+
+  <div class="section-title">Suggested day route</div>
+
+  <div id="stop-list"></div>
+
+  <div class="route-note">
+    <strong>~155 miles total.</strong> Allow 6–7 hrs driving + visits.<br>
+    Okehampton is optional — adds ~1 hr. Exmouth is a separate day.
+  </div>
+
+  <div class="legend">
+    <div class="legend-title">Status key</div>
+    <div class="legend-row"><div class="legend-dot" style="background:#c0392b"></div>All 3 SKUs silent (Dark 40)</div>
+    <div class="legend-row"><div class="legend-dot" style="background:#e67e22"></div>2 SKUs silent</div>
+    <div class="legend-row"><div class="legend-dot" style="background:#d4ac0d"></div>1 SKU silent</div>
+    <div class="legend-row"><div class="legend-dot" style="background:#27ae60"></div>All SKUs still selling</div>
+    <div class="legend-row"><div class="legend-dot" style="background:#2e5d9e;border:2px solid #8aafcc"></div>Start: Bodmin</div>
+  </div>
+</div>
+
+<script>
+const map = L.map('map').setView([50.45, -4.35], 9);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors',
+  maxZoom: 18
+}).addTo(map);
+
+// Status: 3=all dark, 2=two silent, 1=one silent, 0=all ok
+const stores = [
+  { name: 'Bodmin', sub: 'Start point', county: '', lat: 50.466, lng: -4.719, status: -1, skus: '', prior: null, stop: null },
+  { name: 'Wadebridge', sub: 'Cornwall', county: 'Cornwall', lat: 50.517, lng: -4.833, status: 0, skus: 'All SKUs still selling', prior: '£21.47', stop: 1 },
+  { name: 'Westhill – St. Austell', sub: 'Cornwall', county: 'Cornwall', lat: 50.340, lng: -4.794, status: 3, skus: 'Calming · Joint Care · Fresh Breath', prior: '£24.36', stop: 2 },
+  { name: 'St Blazey', sub: 'Cornwall', county: 'Cornwall', lat: 50.362, lng: -4.718, status: 1, skus: 'Fresh Breath silent', prior: '£48.00', stop: 3 },
+  { name: 'Liskeard', sub: 'Cornwall', county: 'Cornwall', lat: 50.454, lng: -4.465, status: 1, skus: 'Joint Care silent', prior: '£21.00', stop: 4 },
+  { name: 'Trago Mills', sub: 'Cornwall', county: 'Cornwall', lat: 50.425, lng: -4.510, status: 1, skus: 'Fresh Breath silent', prior: '£36.50', stop: 5 },
+  { name: 'Saltash', sub: 'Cornwall', county: 'Cornwall', lat: 50.405, lng: -4.213, status: 2, skus: 'Calming · Joint Care silent', prior: '£22.30', stop: 6 },
+  { name: 'St Budeaux Tamar House', sub: 'Plymouth, Devon', county: 'Devon', lat: 50.393, lng: -4.192, status: 2, skus: 'Calming · Fresh Breath silent', prior: '£26.75', stop: 7 },
+  { name: 'Whitleigh', sub: 'Plymouth, Devon', county: 'Devon', lat: 50.401, lng: -4.148, status: 2, skus: 'Calming · Fresh Breath silent', prior: '£17.50', stop: 8 },
+  { name: 'Chaddlewood', sub: 'Plymouth, Devon', county: 'Devon', lat: 50.382, lng: -4.063, status: 2, skus: 'Joint Care · Fresh Breath silent', prior: '£34.10', stop: 9 },
+  { name: 'Ivybridge', sub: 'Devon', county: 'Devon', lat: 50.388, lng: -3.932, status: 3, skus: 'Calming · Joint Care · Fresh Breath', prior: '£23.04', stop: 10 },
+  { name: 'Tavistock', sub: 'Devon', county: 'Devon', lat: 50.548, lng: -4.144, status: 3, skus: 'Joint Care · Fresh Breath', prior: '£7.92', stop: 11 },
+  { name: 'Okehampton', sub: 'Devon (optional)', county: 'Devon', lat: 50.736, lng: -4.003, status: 2, skus: 'Calming · Fresh Breath silent', prior: '£22.14', stop: 12 },
+  { name: 'Exmouth', sub: 'Devon (separate day)', county: 'Devon', lat: 50.618, lng: -3.413, status: 2, skus: 'Calming · Fresh Breath silent', prior: '£31.52', stop: null },
+];
+
+function statusColour(s) {
+  if (s === -1) return '#2e5d9e';
+  if (s === 3)  return '#c0392b';
+  if (s === 2)  return '#e67e22';
+  if (s === 1)  return '#d4ac0d';
+  return '#27ae60';
+}
+
+function makeDot(colour, size, borderColour) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:${size}px;height:${size}px;border-radius:50%;
+      background:${colour};
+      border:2.5px solid ${borderColour || '#fff'};
+      box-shadow:0 2px 6px rgba(0,0,0,0.4);
+      display:flex;align-items:center;justify-content:center;
+      font-size:${size > 22 ? 11 : 9}px;font-weight:bold;color:#fff;
+    "></div>`,
+    iconSize: [size, size],
+    iconAnchor: [size/2, size/2],
+  });
+}
+
+function makeNumbered(colour, num, size) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:${size}px;height:${size}px;border-radius:50%;
+      background:${colour};
+      border:2.5px solid #fff;
+      box-shadow:0 2px 6px rgba(0,0,0,0.45);
+      display:flex;align-items:center;justify-content:center;
+      font-size:11px;font-weight:bold;color:#fff;
+    ">${num}</div>`,
+    iconSize: [size, size],
+    iconAnchor: [size/2, size/2],
+  });
+}
+
+const markers = {};
+const routeCoords = [];
+
+stores.forEach(s => {
+  const col = statusColour(s.status);
+  const isStart = s.status === -1;
+  const icon = s.stop
+    ? makeNumbered(col, s.stop, isStart ? 28 : 26)
+    : (isStart ? makeNumbered(col, '★', 28) : makeDot(col, 20, '#fff'));
+
+  const badgeClass = s.status === 3 ? 'badge-dark' : s.status === 2 ? 'badge-2sku' : s.status === 1 ? 'badge-1sku' : 'badge-ok';
+  const badgeLabel = s.status === 3 ? 'All 3 silent' : s.status === 2 ? '2 SKUs silent' : s.status === 1 ? '1 SKU silent' : 'Selling';
+
+  const popup = `
+    <div style="font-family:Arial;min-width:180px">
+      <div style="font-weight:bold;font-size:13px;margin-bottom:4px">${s.name}</div>
+      <div style="font-size:11px;color:#555;margin-bottom:6px">${s.sub}</div>
+      ${s.prior ? `<div style="font-size:11px;margin-bottom:4px"><b>Prior sales (Wk08–16):</b> ${s.prior}</div>` : ''}
+      ${s.skus ? `<div style="font-size:11px;margin-bottom:4px"><b>Silent:</b> ${s.skus}</div>` : ''}
+      <span class="badge ${badgeClass}" style="display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:bold;
+        background:${col};color:${s.status===1?'#111':'#fff'}">${badgeLabel}</span>
+    </div>`;
+
+  const m = L.marker([s.lat, s.lng], { icon })
+    .addTo(map)
+    .bindPopup(popup);
+  markers[s.name] = m;
+
+  if (s.stop) routeCoords.push([s.lat, s.lng]);
+});
+
+// Draw route line (for stops 1-12, skipping Exmouth)
+const routeLine = L.polyline(
+  [
+    [50.466, -4.719], // Bodmin
+    [50.517, -4.833], // Wadebridge
+    [50.466, -4.719], // back through Bodmin
+    [50.340, -4.794], // St Austell
+    [50.362, -4.718], // St Blazey
+    [50.454, -4.465], // Liskeard
+    [50.425, -4.510], // Trago Mills
+    [50.405, -4.213], // Saltash
+    [50.393, -4.192], // St Budeaux
+    [50.401, -4.148], // Whitleigh
+    [50.382, -4.063], // Chaddlewood
+    [50.388, -3.932], // Ivybridge
+    [50.548, -4.144], // Tavistock
+    [50.736, -4.003], // Okehampton (optional)
+    [50.466, -4.719], // back to Bodmin
+  ],
+  { color: '#2e5d9e', weight: 3, opacity: 0.7, dashArray: '6 4' }
+).addTo(map);
+
+// Panel stop list
+const list = document.getElementById('stop-list');
+const panelStores = stores.filter(s => s.stop !== null && s.status !== -1);
+panelStores.sort((a,b) => a.stop - b.stop);
+
+panelStores.forEach(s => {
+  const col = statusColour(s.status);
+  const badgeClass = s.status === 3 ? 'badge-dark' : s.status === 2 ? 'badge-2sku' : s.status === 1 ? 'badge-1sku' : 'badge-ok';
+  const badgeLabel = s.status === 3 ? '🔴 All 3 silent' : s.status === 2 ? '🟠 2 SKUs silent' : s.status === 1 ? '🟡 1 SKU silent' : '🟢 Selling';
+
+  const div = document.createElement('div');
+  div.className = 'stop';
+  div.innerHTML = `
+    <div class="stop-num" style="background:${col}">${s.stop}</div>
+    <div class="stop-info">
+      <div class="stop-name">${s.name}</div>
+      <div class="stop-detail">${s.county} · Prior £ ${s.prior}</div>
+      <div class="stop-skus">${badgeLabel}${s.stop===12?' · <em style="color:#8aafcc">optional</em>':''}</div>
+    </div>`;
+  div.addEventListener('click', () => {
+    map.setView([s.lat, s.lng], 14);
+    markers[s.name].openPopup();
+  });
+  list.appendChild(div);
+});
+
+// Exmouth note at bottom of list
+const exDiv = document.createElement('div');
+exDiv.className = 'stop';
+exDiv.style.opacity = '0.55';
+exDiv.innerHTML = `
+  <div class="stop-num" style="background:#888">—</div>
+  <div class="stop-info">
+    <div class="stop-name">Exmouth</div>
+    <div class="stop-detail">Devon · Prior £31.52 · ~75 miles from Bodmin</div>
+    <div class="stop-skus" style="color:#8aafcc">Separate day recommended</div>
+  </div>`;
+list.appendChild(exDiv);
+</script>
+</body>
+</html>
