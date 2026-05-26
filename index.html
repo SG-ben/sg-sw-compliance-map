@@ -134,12 +134,13 @@ const stores = [
   { name: 'Westhill – St. Austell', sub: 'Cornwall', county: 'Cornwall', lat: 50.340, lng: -4.794, status: 3, skus: 'Calming · Joint Care · Fresh Breath', prior: '£24.36', stop: 2 },
   { name: 'St Blazey', sub: 'Cornwall', county: 'Cornwall', lat: 50.362, lng: -4.718, status: 1, skus: 'Fresh Breath silent', prior: '£48.00', stop: 3 },
   { name: 'Liskeard', sub: 'Cornwall', county: 'Cornwall', lat: 50.454, lng: -4.465, status: 1, skus: 'Joint Care silent', prior: '£21.00', stop: 4 },
-  { name: 'Trago Mills', sub: 'Cornwall', county: 'Cornwall', lat: 50.425, lng: -4.510, status: 1, skus: 'Fresh Breath silent', prior: '£36.50', stop: 5 },
-  { name: 'Saltash', sub: 'Cornwall', county: 'Cornwall', lat: 50.405, lng: -4.213, status: 2, skus: 'Calming · Joint Care silent', prior: '£22.30', stop: 6 },
-  { name: 'St Budeaux Tamar House', sub: 'Plymouth, Devon', county: 'Devon', lat: 50.393, lng: -4.192, status: 2, skus: 'Calming · Fresh Breath silent', prior: '£26.75', stop: 7 },
-  { name: 'Whitleigh', sub: 'Plymouth, Devon', county: 'Devon', lat: 50.401, lng: -4.148, status: 2, skus: 'Calming · Fresh Breath silent', prior: '£17.50', stop: 8 },
-  { name: 'Chaddlewood', sub: 'Plymouth, Devon', county: 'Devon', lat: 50.382, lng: -4.063, status: 2, skus: 'Joint Care · Fresh Breath silent', prior: '£34.10', stop: 9 },
-  { name: 'Ivybridge', sub: 'Devon', county: 'Devon', lat: 50.388, lng: -3.932, status: 3, skus: 'Calming · Joint Care · Fresh Breath', prior: '£23.04', stop: 10 },
+  { name: 'Trago Mills', sub: 'Newton Abbot, Devon', county: 'Devon', lat: 50.528, lng: -3.614, status: 1, skus: 'Fresh Breath silent', prior: '£36.50', stop: null },
+  { name: 'Saltash', sub: 'Cornwall', county: 'Cornwall', lat: 50.405, lng: -4.213, status: 2, skus: 'Calming · Joint Care silent', prior: '£22.30', stop: 5 },
+  { name: 'St Budeaux Tamar House', sub: 'Plymouth, Devon', county: 'Devon', lat: 50.393, lng: -4.192, status: 2, skus: 'Calming · Fresh Breath silent', prior: '£26.75', stop: 6 },
+  { name: 'Whitleigh', sub: 'Plymouth, Devon', county: 'Devon', lat: 50.401, lng: -4.148, status: 2, skus: 'Calming · Fresh Breath silent', prior: '£17.50', stop: 7 },
+  { name: 'Chaddlewood', sub: 'Plymouth, Devon', county: 'Devon', lat: 50.382, lng: -4.063, status: 2, skus: 'Joint Care · Fresh Breath silent', prior: '£34.10', stop: 8 },
+  { name: 'Ivybridge', sub: 'Devon', county: 'Devon', lat: 50.388, lng: -3.932, status: 3, skus: 'Calming · Joint Care · Fresh Breath', prior: '£23.04', stop: 9 },
+  { name: 'Trago Mills', sub: 'Newton Abbot, Devon', county: 'Devon', lat: 50.528, lng: -3.614, status: 1, skus: 'Fresh Breath silent', prior: '£36.50', stop: 10 },
   { name: 'Tavistock', sub: 'Devon', county: 'Devon', lat: 50.548, lng: -4.144, status: 3, skus: 'Joint Care · Fresh Breath', prior: '£7.92', stop: 11 },
   { name: 'Okehampton', sub: 'Devon (optional)', county: 'Devon', lat: 50.736, lng: -4.003, status: 2, skus: 'Calming · Fresh Breath silent', prior: '£22.14', stop: 12 },
   { name: 'Exmouth', sub: 'Devon (separate day)', county: 'Devon', lat: 50.618, lng: -3.413, status: 2, skus: 'Calming · Fresh Breath silent', prior: '£31.52', stop: null },
@@ -225,12 +226,12 @@ const routeLine = L.polyline(
     [50.340, -4.794], // St Austell
     [50.362, -4.718], // St Blazey
     [50.454, -4.465], // Liskeard
-    [50.425, -4.510], // Trago Mills
     [50.405, -4.213], // Saltash
     [50.393, -4.192], // St Budeaux
     [50.401, -4.148], // Whitleigh
     [50.382, -4.063], // Chaddlewood
     [50.388, -3.932], // Ivybridge
+    [50.528, -3.614], // Trago Mills (Newton Abbot)
     [50.548, -4.144], // Tavistock
     [50.736, -4.003], // Okehampton (optional)
     [50.466, -4.719], // back to Bodmin
